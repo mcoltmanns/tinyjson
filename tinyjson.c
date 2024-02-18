@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 // what is this const char** cursor?
 // a mutable pointer->pointer-> an immutable character

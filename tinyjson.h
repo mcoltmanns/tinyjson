@@ -4,7 +4,7 @@
 #define JSON_SUCCESS 1
 #define JSON_FAILURE 0
 
-enum {
+enum JSON_TYPES {
     JSON_OBJECT,
     JSON_ARRAY,
     JSON_STRING,
