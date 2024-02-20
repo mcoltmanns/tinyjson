@@ -269,7 +269,7 @@ static int jvallen(const jvalue* val)
 }
 
 // remember to free what this returns!
-char* json_val_to_str(const jvalue* val)
+char* jval_to_str(const jvalue* val)
 {
     if(val == NULL) return NULL;
     char* out = calloc(jvallen(val) + 1, 1);
@@ -284,7 +284,7 @@ char* json_val_to_str(const jvalue* val)
             jmember* now = val->members;
             while(now != NULL)
             {
-                char* inner = json_val_to_str(now->element); // TODO: this is probably slow - going over a lot of strings a lot of times.
+                char* inner = jval_to_str(now->element); // TODO: this is probably slow - going over a lot of strings a lot of times.
                 sprintf(pos, "\"%s\" : %s%s", now->string, inner, now->next != NULL ? ",\n" : "");
                 pos += strlen(now->string) + 5 + strlen(inner) + (now->next != NULL ? 2 : 0);
                 free(inner);
@@ -298,7 +298,7 @@ char* json_val_to_str(const jvalue* val)
             pos += 2;
             for(int i = 0; val->elements[i] != NULL; i++)
             {
-                char* inner = json_val_to_str(val->elements[i]);
+                char* inner = jval_to_str(val->elements[i]);
                 sprintf(pos, "%s%s", inner, val->elements[i + 1] != NULL ? ",\n" : "");
                 pos += strlen(inner) + (val->elements[i + 1] != NULL ? 2 : 0);
                 free(inner);

@@ -52,6 +52,6 @@ jvalue* json_search_by_key(const char* key, const jvalue* obj);
 // allocate and return a pointer to a valid json string representing val
 // output will be valid json, but not necessarily pretty
 // returns NULL on failure
-char* json_val_to_str(const jvalue* val);
+char* jval_to_str(const jvalue* val);
 
 #endif

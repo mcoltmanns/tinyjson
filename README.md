@@ -5,12 +5,15 @@ Designed to be as simple as possible - only two structure types, and the only no
 Written for my reimplementation of my reMarkable tablet synchronization utility.
 ## Getting going:
 ```
-const char* test = "[1, 2, 3, true, false]";
-const char** cursor = &test;
-jvalue* v = malloc(sizeof(jvalue));
-if(json_parse_value(cursor, v))
-    json_print_value(v);
-json_free_value(v);
+const char* data = "{\"key\" : \"value\", \"array\" : [true, false, null] }";
+    jvalue* val = malloc(sizeof(jvalue));
+    if(json_parse_value(&data, val))
+    {
+        char* str = jval_to_str(val);
+        printf("%s\n", str);
+        free(str);
+    }
+    json_free_value(val);
 ```
 `struct jvalue` holds a JSON value: object, array, string, number, boolean, or null
 
