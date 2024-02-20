@@ -16,10 +16,10 @@ json_free_value(v);
 
 `struct jmember` holds a key-value pair where the key is a string, and the value is any `jvalue`
 
-Better docs will arrive someday! (read: if people start to ask for them)
+I try to keep things legible and commented, so questions should be answerable by reading the source. But if you still have questions, feel free to ask.
 
 ### Things to come:
-- nicer print function
 - thread safety (who doesn't want to process json in parallel?)
+- suggestions?
 
 In the meantime, please check out my other stuff and let me know what I could be doing better :)

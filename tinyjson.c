@@ -213,52 +213,6 @@ int json_parse_value(const char** cursor, jvalue* empty)
     }
 }
 
-void json_print_value(const jvalue* v) // TODO: would be nice if this did fancy indentation
-{
-    if(v == NULL) return;
-    switch(v->type)
-    {
-        case JSON_OBJECT:
-            printf("{\n");
-            jmember* now = v->members;
-            while(now != NULL)
-            {
-                printf("\"%s\" : ", now->string);
-                json_print_value(now->element);
-                if(now->next != NULL) printf(",\n");
-                now = now->next;
-            }
-            printf("\n}");
-            break;
-        
-        case JSON_ARRAY:
-            printf("[\n");
-            for(int i = 0; v->elements[i] != NULL; i++)
-            {
-                json_print_value(v->elements[i]);
-                if(v->elements[i + 1] != NULL) printf(",\n");
-            }
-            printf("\n]");
-            break;
-
-        case JSON_STRING:
-            printf("\"%s\"", v->string);
-            break;
-
-        case JSON_NUMBER:
-            printf("%f", v->number);
-            break;
-
-        case JSON_BOOL:
-            printf("%s", v->boolean ? "true" : "false");
-            break;
-
-        case JSON_NULL:
-            printf("null");
-            break;
-    }
-}
-
 jvalue* json_search_by_key(const char* key, const jvalue* obj)
 {
     jmember* here = obj->members;
@@ -268,4 +222,102 @@ jvalue* json_search_by_key(const char* key, const jvalue* obj)
         here = here->next;
     }
     return NULL;
+}
+
+// calculate how many characters are needed to print a json value - newlines and whitespace included (but not the null)
+// newline after every opening bracket and every comma
+// returns -1 on failure (null pointer)
+static int jvallen(const jvalue* val)
+{
+    if(val == NULL) return -1;
+    int length;
+    char buf[256];
+    switch(val->type)
+    {
+        case JSON_OBJECT:
+            length = 2; // {\n
+            jmember* now = val->members;
+            while(now != NULL)
+            {
+                length += strlen(now->string) + 5 + jvallen(now->element) + (now->next != NULL ? 2 : 0); // "(string)" : (length of value) (,\n if there's another member coming)(5 + strlen + vallen + maybe 2)
+                now = now->next; 
+            }
+            length += 2; // }\n
+            break;
+        case JSON_ARRAY:
+            length = 2;
+            for(int i = 0; val->elements[i] != NULL; i++)
+                length += jvallen(val->elements[i]) + (val->elements[i + 1] != NULL ? 2 : 0); // same concept as for objects
+            length += 2; // ]\n
+            break;
+        case JSON_STRING:
+            length = strlen(val->string) + 2;
+            break;
+        case JSON_NUMBER:
+            sprintf(buf, "%f", val->number);
+            length = strlen(buf);
+            break;
+        case JSON_BOOL:
+            length = val->boolean ? 4 : 5;
+            break;
+        case JSON_NULL:
+            length = 4;
+            break;
+    }
+
+    return length;
+}
+
+// remember to free what this returns!
+char* json_val_to_str(const jvalue* val)
+{
+    if(val == NULL) return NULL;
+    char* out = calloc(jvallen(val) + 1, 1);
+    if(out == NULL) return NULL;
+
+    char* pos = out;
+    switch(val->type)
+    {
+        case JSON_OBJECT:
+            sprintf(pos, "{\n");
+            pos += 2;
+            jmember* now = val->members;
+            while(now != NULL)
+            {
+                char* inner = json_val_to_str(now->element); // TODO: this is probably slow - going over a lot of strings a lot of times.
+                sprintf(pos, "\"%s\" : %s%s", now->string, inner, now->next != NULL ? ",\n" : "");
+                pos += strlen(now->string) + 5 + strlen(inner) + (now->next != NULL ? 2 : 0);
+                free(inner);
+                now = now->next;
+            }
+            sprintf(pos, "\n}");
+            pos += 2;
+            break;
+        case JSON_ARRAY:
+            sprintf(pos, "[\n");
+            pos += 2;
+            for(int i = 0; val->elements[i] != NULL; i++)
+            {
+                char* inner = json_val_to_str(val->elements[i]);
+                sprintf(pos, "%s%s", inner, val->elements[i + 1] != NULL ? ",\n" : "");
+                pos += strlen(inner) + (val->elements[i + 1] != NULL ? 2 : 0);
+                free(inner);
+            }
+            sprintf(pos, "\n]");
+            pos += 2;
+            break;
+        case JSON_STRING:
+            sprintf(out, "\"%s\"", val->string);
+            break;
+        case JSON_NUMBER:
+            sprintf(out, "%f", val->number);
+            break;
+        case JSON_BOOL:
+            strcpy(out, val->boolean ? "true" : "false");
+            break;
+        case JSON_NULL:
+            strcpy(out, "null");
+            break;
+    }
+    return out;
 }

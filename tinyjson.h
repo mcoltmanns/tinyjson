@@ -38,19 +38,20 @@ struct jmember {
 void json_free_value(jvalue* v);
 
 // parse a json value from a string, and leave the cursor on the first character after that value
-// cursor should be the address of the beginning of a string
-// empty should be a dynamically allocated jvalue (will be filled)
+// cursor should be the address of the beginning of a string (eg char** cursor = &str)
+// empty should be a previously malloc'd jvalue (will be filled)
 // returns JSON_FAILURE on fail (due to syntax or memory errors)
-// regardless of success or failure, the caller is expected to allocate and free empty
+// regardless of success or failure, the caller is expected to allocate and free empty (using json_free_value)
 int json_parse_value(const char** cursor, jvalue* empty);
-
-// print a json value
-// output is not guaranteed to be valid json!
-void json_print_value(const jvalue* v);
 
 // search for a certain key in a json object (non-recursive)
 // returns NULL if the key didn't exist, returns a pointer to the value associated with the first instance of the key otherwise
 // caller should ensure the jvalue being passed is a properly built object!
 jvalue* json_search_by_key(const char* key, const jvalue* obj);
+
+// allocate and return a pointer to a valid json string representing val
+// output will be valid json, but not necessarily pretty
+// returns NULL on failure
+char* json_val_to_str(const jvalue* val);
 
 #endif
