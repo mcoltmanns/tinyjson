@@ -19,10 +19,6 @@ json_free_value(val);
 
 `struct jmember` holds a key-value pair where the key is a string, and the value is any `jvalue`
 
-I try to keep things legible and commented, so questions should be answerable by reading the source. But if you still have questions, feel free to ask.
-
-### Things to come:
-- thread safety (who doesn't want to process json in parallel?)
-- suggestions?
+I try to keep things legible and commented, so questions should be answerable by reading the source. But if you still have questions (or suggestions!), feel free to ask.
 
 In the meantime, please check out my other stuff and let me know what I could be doing better :)
