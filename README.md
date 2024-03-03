@@ -6,16 +6,13 @@ Written for my reimplementation of my reMarkable tablet synchronization utility.
 ## Getting going:
 ```
 const char* data = "{\"key\" : \"value\", \"array\" : [true, false, null] }";
-
 jvalue* val = malloc(sizeof(jvalue));
-
 if(json_parse_value(&data, val))
 {
     char* str = jval_to_str(val);
     printf("%s\n", str);
     free(str);
 }
-
 json_free_value(val);
 ```
 `struct jvalue` holds a JSON value: object, array, string, number, boolean, or null
