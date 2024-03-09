@@ -95,6 +95,13 @@ static int json_parse_member(const char** cursor, jmember* member)
     return json_parse_value(cursor, member->element);
 }
 
+void json_print_value(jvalue* v)
+{
+    char* str = jval_to_str(v);
+    printf("%s\n", str);
+    free(str);
+}
+
 int json_parse_value(const char** cursor, jvalue* empty)
 {
     skip_space(cursor); // chop whitespace

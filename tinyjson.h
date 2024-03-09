@@ -33,6 +33,9 @@ struct jmember {
     jmember* next;
 };
 
+// print a json value to stdout (uses printf)
+void json_print_value(jvalue* v);
+
 // free the memory associated with a jvalue
 // also frees all members/elements of the value if it's an array or object
 void json_free_value(jvalue* v);
