@@ -1,5 +1,5 @@
-#ifndef HEADER
-#define HEADER
+#ifndef TINYJSON_HEADER
+#define TINYJSON_HEADER
 
 #define JSON_SUCCESS 1
 #define JSON_FAILURE 0
