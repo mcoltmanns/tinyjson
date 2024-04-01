@@ -52,6 +52,5 @@ Booleans are implemented as integer values with positive logic (not 0 for true, 
 ### Null values
 Null values do not have a defined data field, and do not hold a value. Do not attempt to access the any data field of a null value.
 
-## Things to come:
-- thread safety (who doesn't want to process json in parallel?)
-- suggestions?
+## Feedback:
+Feedback is encouraged!
