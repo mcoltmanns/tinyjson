@@ -38,7 +38,7 @@ Objects are implemented as linked lists of `jmember` types. Each `jmember` conta
 Editing objects is as easy as moving pointers around to change the list. New members should be dynamically allocated.
 
 ### Arrays
-Arrays are implemented as arrays of pointers to `jvalues`. Accessing array elements can be done as you would in any other case, but resizing the array requires copy/reallocation.
+Arrays are implemented as null-terminated arrays of pointers to `jvalues`. Accessing array elements can be done as you would in any other case, but resizing the array requires copy/reallocation.
 
 ### Strings
 Strings are implemented as C-style (null-terminated) ASCII strings. During parsing, strings are read verbatim.

@@ -45,6 +45,7 @@ static int json_is_literal(const char** cursor, const char* literal)
 
 void json_free_value(jvalue* v) // TODO: review edge cases here. what about freeing partially/malformed values?
 {
+    if(v == NULL) return;
     switch(v->type) // following 3 cases are dynamically allocated
     {
         jmember* next;
@@ -177,7 +178,7 @@ int json_parse_value(const char** cursor, jvalue* empty)
                 skip_space(cursor);
             }
             empty->elements[i] = NULL; // terminate the array
-            jvalue** trimmed = realloc(empty->elements, i * sizeof(jvalue*)); // free any unused space
+            jvalue** trimmed = realloc(empty->elements, (i + 1) * sizeof(jvalue*)); // free any unused space
             if(trimmed == NULL) return JSON_FAILURE;
             empty->elements = trimmed; // again twostep so caller can handle deallocation on failure
             (*cursor)++; // continue to the next thing
