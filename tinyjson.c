@@ -113,7 +113,11 @@ int json_parse_value(const char** cursor, jvalue* empty)
             empty->members = NULL; // initialize an empty object (point head to null)
             (*cursor)++; // go to next character
             skip_space(cursor); // skip any space before first member
-            if(**cursor == '}') return JSON_SUCCESS; // if the object closes immediately stop
+            if(**cursor == '}')  // if the object closes immediately stop
+            {
+                (*cursor)++; // continue to the next thing
+                return JSON_SUCCESS;
+            }
             jmember* tail = empty->members; // points to NULL (because at first there is no tail)
             while(1) // go until object close
             {
@@ -143,7 +147,11 @@ int json_parse_value(const char** cursor, jvalue* empty)
             if(empty->elements == NULL) return JSON_FAILURE;
             (*cursor)++;
             skip_space(cursor);
-            if(**cursor == ']') return JSON_SUCCESS; // if object closes immediately, we're done
+            if(**cursor == ']') // if array closes immediately, stop
+            {
+                (*cursor)++; // continue to the next thing
+                return JSON_SUCCESS;
+            }
             int i = 0;
             while(1) // TODO: also fix this ugly loop
             {
@@ -154,7 +162,7 @@ int json_parse_value(const char** cursor, jvalue* empty)
                     if(i + 1 == size) // are we about to overflow?
                     {
                         size *= 2; // double the size
-                        jvalue** moreSpace = realloc(empty->elements, size);
+                        jvalue** moreSpace = realloc(empty->elements, size * sizeof(jvalue*));
                         if(moreSpace == NULL) return JSON_FAILURE; // external caller should handle deallocation anyways
                         empty->elements = moreSpace; // have to twostep here so that external deallocation can find the old array in case of failure
                     }
@@ -169,7 +177,7 @@ int json_parse_value(const char** cursor, jvalue* empty)
                 skip_space(cursor);
             }
             empty->elements[i] = NULL; // terminate the array
-            jvalue** trimmed = realloc(empty->elements, i); // free any unused space
+            jvalue** trimmed = realloc(empty->elements, i * sizeof(jvalue*)); // free any unused space
             if(trimmed == NULL) return JSON_FAILURE;
             empty->elements = trimmed; // again twostep so caller can handle deallocation on failure
             (*cursor)++; // continue to the next thing
