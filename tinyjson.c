@@ -240,6 +240,70 @@ jvalue* json_search_by_key(const char* key, const jvalue* obj)
     return NULL;
 }
 
+// delete the first instance of a member with a certain key from an object
+// returns JSON_FAILURE on failure, JSON_SUCCESS on success
+int json_delete_first_member(const char* key, jvalue* obj)
+{
+    if(obj->type != JSON_OBJECT) return JSON_FAILURE;
+    jmember* prev = NULL;
+    jmember* curr = obj->members;
+    while(curr != NULL && strcmp(key, curr->string)) // as long as we're not at the end of the object and key and current string don't match
+    {
+        prev = curr; // continue on to the next object
+        curr = curr->next;
+    }
+    if(curr == NULL) return JSON_SUCCESS; // nothing to delete
+    if(prev == NULL) // have to delete the first member
+        obj->members = curr->next;
+    else
+        prev->next = curr->next; // have the previous element skip over curr and point to the next element
+    json_free_member(curr);
+    return JSON_SUCCESS;
+}
+
+// delete all members with a certain key from an object
+// returns JSON_FAILURE on failure, JSON_SUCCESS on success
+int json_delete_all_members(const char* key, jvalue* obj)
+{
+    if(obj->type != JSON_OBJECT) return JSON_FAILURE;
+    jmember* prev = NULL;
+    jmember* curr = obj->members;
+    while(curr != NULL) // go until end of object
+    {
+        if(!strcmp(key, curr->string))
+        {
+            if(prev == NULL) // have to delete first element
+                obj->members = curr->next;
+            else // have to delete a given element
+                prev->next = curr->next;
+            json_free_member(curr);
+        }
+        prev = curr; // advance to next element
+        curr = curr->next;
+    }
+    return JSON_SUCCESS;
+}
+
+// add a member to an object (prepends)
+// returns JSON_FAILURE on failure, JSON_SUCCESS on success
+int json_add_member(const char* key, jvalue* element, jvalue* obj)
+{
+    if(obj->type != JSON_OBJECT) return JSON_FAILURE;
+    jmember* new_member = malloc(sizeof(jmember));
+    if(new_member == NULL) return JSON_FAILURE;
+    new_member->string = calloc(strlen(key) + 1, 1);
+    if(new_member->string == NULL)
+    {
+        free(new_member);
+        return JSON_FAILURE;
+    }
+    strcpy(new_member->string, key);
+    new_member->element = element;
+    new_member->next = obj->members;
+    obj->members = new_member;
+    return JSON_SUCCESS;
+}
+
 // calculate how many characters are needed to print a json value - newlines and whitespace included (but not the null)
 // newline after every opening bracket and every comma
 // returns -1 on failure (null pointer)

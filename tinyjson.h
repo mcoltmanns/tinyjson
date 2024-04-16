@@ -52,6 +52,16 @@ int json_parse_value(const char** cursor, jvalue* empty);
 // caller should ensure the jvalue being passed is a properly built object!
 jvalue* json_search_by_key(const char* key, const jvalue* obj);
 
+// delete the first instance of a member with a certain key from an object
+// returns JSON_FAILURE on failure, JSON_SUCCESS on success
+int json_delete_first_member(const char* key, jvalue* obj);
+// delete all members with a certain key from an object
+// returns JSON_FAILURE on failure, JSON_SUCCESS on success
+int json_delete_all_members(const char* key, jvalue* obj);
+// add a member to an object (prepends)
+// returns JSON_FAILURE on failure, JSON_SUCCESS on success
+int json_add_member(const char* key, jvalue* val, jvalue* obj);
+
 // allocate and return a pointer to a valid json string representing val
 // output will be valid json, but not necessarily pretty
 // returns NULL on failure
