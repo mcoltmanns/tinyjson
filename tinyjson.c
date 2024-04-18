@@ -276,10 +276,15 @@ int json_delete_all_members(const char* key, jvalue* obj)
                 obj->members = curr->next;
             else // have to delete a given element
                 prev->next = curr->next;
+            jmember* next = curr->next;
             json_free_member(curr);
+            curr = next;
         }
-        prev = curr; // advance to next element
-        curr = curr->next;
+        else
+        {
+            prev = curr; // advance to next element FIXME: this looks bugged
+            curr = curr->next;
+        }
     }
     return JSON_SUCCESS;
 }
