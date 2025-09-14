@@ -3,6 +3,14 @@
 A small C library for parsing JSON strings.
 Designed to be as simple as possible - only two structure types, and the only non-parsing related functions are for searching by key in an object and printing a value to the terminal.
 Written for my reimplementation of my reMarkable tablet synchronization utility.
+
+## Installation (system-wide)
+- Clone the repository, then `$ cd ~/.../tinyjson`.
+- `$ mkdir build`
+- `$ cd build`
+- `$ cmake ..`
+- `$ make install`
+
 ## Getting going:
 ```
 const char* data = "{\"key\" : \"value\", \"array\" : [true, false, null] }";
