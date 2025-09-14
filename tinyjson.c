@@ -6,17 +6,17 @@
 #include <string.h>
 
 // what is this const char** cursor?
-// a mutable pointer->pointer-> an immutable character
+// a mutable pointer->pointer-> a mutable character
 
 // advance the cursor until it isn't on a space anymore
-static void skip_space(const char** cursor)
+static void skip_space(char** cursor)
 {
     if(**cursor == '\0') return; // stop on eof
     while(isspace(**cursor)) (*cursor)++; // as long as the cursor is on a space, increment the cursor's position
 }
 
 // advance the cursor to the next occurrence of a character
-static void advance_to(char target, const char** cursor)
+static void advance_to(char target, char** cursor)
 {
     if(**cursor == '\0') return;
     while(**cursor != target) (*cursor)++;
@@ -32,7 +32,7 @@ static void json_free_member(jmember* m)
 }
 
 // check if the text at cursor is a certain literal, and advance cursor to the character after that literal
-static int json_is_literal(const char** cursor, const char* literal)
+static int json_is_literal(char** cursor, const char* literal)
 {
     while(*literal != '\0' && !isspace(**cursor))
     {
@@ -48,11 +48,10 @@ void json_free_value(jvalue* v) // TODO: review edge cases here. what about free
     if(v == NULL) return;
     switch(v->type) // following 3 cases are dynamically allocated
     {
-        jmember* next;
         case JSON_OBJECT:
             while(v->members != NULL) // go until null pointer
             {
-                next = v->members;
+                jmember *next = v->members;
                 v->members = v->members->next;
                 json_free_member(next);
             }
@@ -65,16 +64,19 @@ void json_free_value(jvalue* v) // TODO: review edge cases here. what about free
             free(v->elements);
             break;
 
-        case JSON_STRING:
+        case JSON_STRING: // for strings just free the string
             free(v->string);
+            break;
+
+        default: // in the default case, do nothing (for statically alloc'd structs)
             break;
     }
 
-    free(v); // free this struct
+    free(v); // free the static parts
 }
 
 // assume cursor starts immediately after this object's opening bracket
-static int json_parse_member(const char** cursor, jmember* member)
+static int json_parse_member(char** cursor, jmember* member)
 {
     skip_space(cursor); // chop whitespace
     // read in the key
@@ -103,7 +105,7 @@ void json_print_value(jvalue* v)
     free(str);
 }
 
-int json_parse_value(const char** cursor, jvalue* empty)
+int json_parse_value(char** cursor, jvalue* empty)
 {
     skip_space(cursor); // chop whitespace
     if(**cursor == '\0') return JSON_FAILURE; // can't parse on eof
@@ -222,10 +224,11 @@ int json_parse_value(const char** cursor, jvalue* empty)
             return JSON_FAILURE;
 
         default: // parse a number literal
-            empty->type = JSON_NUMBER;
-            char before = **cursor; // FIXME: funky pointers!
-            empty->number = strtod(*cursor, cursor);
+            empty->type = JSON_NUMBER; // set type of the member
+            const char before = **cursor; // save value at cursor FIXME: funky pointers!
+            empty->number = strtod(*cursor, cursor); // strtod moves the cursor one past the last character interpreted
             return (empty->number == 0 && **cursor == before) ? JSON_FAILURE : JSON_SUCCESS; // TODO: make sure this check actually catches everything!
+            // strtod returns 0 on failure, but does it really not move the cursor?
     }
 }
 
@@ -247,7 +250,7 @@ int json_delete_first_member(const char* key, jvalue* obj)
     if(obj->type != JSON_OBJECT) return JSON_FAILURE;
     jmember* prev = NULL;
     jmember* curr = obj->members;
-    while(curr != NULL && strcmp(key, curr->string)) // as long as we're not at the end of the object and key and current string don't match
+    while(curr != NULL && strcmp(key, curr->string) != 0) // as long as we're not at the end of the object and key and current string don't match
     {
         prev = curr; // continue on to the next object
         curr = curr->next;
@@ -312,16 +315,16 @@ int json_add_member(const char* key, jvalue* element, jvalue* obj)
 // calculate how many characters are needed to print a json value - newlines and whitespace included (but not the null)
 // newline after every opening bracket and every comma
 // returns -1 on failure (null pointer)
-static int jvallen(const jvalue* val)
+static unsigned long jvallen(const jvalue* val)
 {
     if(val == NULL) return -1;
-    int length;
+    unsigned long length = -1;
     char buf[256];
     switch(val->type)
     {
         case JSON_OBJECT:
             length = 2; // {\n
-            jmember* now = val->members;
+            const jmember* now = val->members;
             while(now != NULL)
             {
                 length += strlen(now->string) + 5 + jvallen(now->element) + (now->next != NULL ? 2 : 0); // "(string)" : (length of value) (,\n if there's another member coming)(5 + strlen + vallen + maybe 2)
@@ -347,6 +350,9 @@ static int jvallen(const jvalue* val)
             break;
         case JSON_NULL:
             length = 4;
+            break;
+
+        default:
             break;
     }
 
@@ -402,6 +408,8 @@ char* jval_to_str(const jvalue* val)
             break;
         case JSON_NULL:
             strcpy(out, "null");
+            break;
+        default:
             break;
     }
     return out;
