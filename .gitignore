@@ -1,5 +1,3 @@
-.vscode/settings.json
-*.out
-*.exe
-*.json
 TODO
+cmake-build-debug
+.idea
