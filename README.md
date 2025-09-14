@@ -51,6 +51,3 @@ Booleans are implemented as integer values with positive logic (not 0 for true, 
 
 ### Null values
 Null values do not have a defined data field, and do not hold a value. Do not attempt to access the any data field of a null value.
-
-## Feedback:
-Feedback is encouraged!
