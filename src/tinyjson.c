@@ -8,6 +8,8 @@
 // what is this const char** cursor?
 // a mutable pointer->pointer-> a mutable character
 
+// use calloc everywhere! gets valgrind to shut up about uninitialized warnings
+
 // advance the cursor until it isn't on a space anymore
 static void skip_space(char** cursor)
 {
@@ -36,11 +38,11 @@ static int json_is_literal(char** cursor, const char* literal)
 {
     while(*literal != '\0' && !isspace(**cursor))
     {
-        if(*literal != **cursor) return JSON_FAILURE;
+        if(*literal != **cursor) return 0;
         literal ++;
         (*cursor)++;
     }
-    return JSON_SUCCESS;
+    return 1;
 }
 
 void json_free_value(jvalue* v) // TODO: review edge cases here. what about freeing partially/malformed values?
@@ -68,11 +70,11 @@ void json_free_value(jvalue* v) // TODO: review edge cases here. what about free
             free(v->string);
             break;
 
-        default: // in the default case, do nothing (for statically alloc'd structs)
+        default: // in the default case, do nothing (for primitive jvals, all members are alloc'd along with the jvalue)
             break;
     }
 
-    free(v); // free the static parts
+    free(v); // free the jvalue itself
 }
 
 // assume cursor starts immediately after this object's opening bracket
@@ -84,7 +86,7 @@ static int json_parse_member(char** cursor, jmember* member)
     (*cursor)++;
     const char* start = *cursor; // parse in the object key
     advance_to('"', cursor); // find the end of the string
-    long int length = *cursor - start; // figure length
+    const long int length = *cursor - start; // figure length
     member->string = calloc(length + 1, 1); // allocate the key
     if(member->string == NULL) return JSON_FAILURE;
     memcpy(member->string, start, length); // copy in the key
@@ -93,14 +95,14 @@ static int json_parse_member(char** cursor, jmember* member)
     if(**cursor != ':') return JSON_FAILURE; // look for the colon
     (*cursor)++; // advance the cursor past the colon
     // read in the value
-    member->element = malloc(sizeof(jvalue));
+    member->element = calloc(1, sizeof(jvalue));
     if(member->element == NULL) return JSON_FAILURE;
     return json_parse_value(cursor, member->element);
 }
 
-void json_print_value(jvalue* v)
+void json_print_value(const jvalue* v)
 {
-    char* str = jval_to_str(v);
+    char* str = json_jval_to_str(v);
     printf("%s\n", str);
     free(str);
 }
@@ -119,12 +121,12 @@ int json_parse_value(char** cursor, jvalue* empty)
             if(**cursor == '}')  // if the object closes immediately stop
             {
                 (*cursor)++; // continue to the next thing
-                return JSON_SUCCESS;
+                break;
             }
             jmember* tail = empty->members; // points to NULL (because at first there is no tail)
             while(1) // go until object close
             {
-                jmember* newMember = malloc(sizeof(jmember));
+                jmember* newMember = calloc(1, sizeof(jmember));
                 if(newMember == NULL) return JSON_FAILURE;
                 if(json_parse_member(cursor, newMember)) // try and parse in the next member
                 {
@@ -136,12 +138,12 @@ int json_parse_value(char** cursor, jvalue* empty)
                 else return JSON_FAILURE;
                 skip_space(cursor); // skip until the next thing
                 if(**cursor == '}') break; // stop when encountering a closing bracket
-                else if(**cursor != ',') return JSON_FAILURE; // fail when not finding a comma
+                if(**cursor != ',') return JSON_FAILURE; // fail when not finding a comma
                 (*cursor)++; // increment the cursor
                 skip_space(cursor);
             }
             (*cursor)++; // continue to the next thing
-            return JSON_SUCCESS;
+            break;
 
         case '[': // parse an array
             empty->type = JSON_ARRAY;
@@ -153,12 +155,12 @@ int json_parse_value(char** cursor, jvalue* empty)
             if(**cursor == ']') // if array closes immediately, stop
             {
                 (*cursor)++; // continue to the next thing
-                return JSON_SUCCESS;
+                break;
             }
             int i = 0;
-            while(1) // TODO: also fix this ugly loop
+            while(1) // TODO: also fix this ugly loop (why is this loop ugly?)
             {
-                jvalue* newValue = malloc(sizeof(jvalue));
+                jvalue* newValue = calloc(1, sizeof(jvalue));
                 if(newValue == NULL) return JSON_FAILURE;
                 if(json_parse_value(cursor, newValue)) // try to parse a value
                 {
@@ -184,7 +186,7 @@ int json_parse_value(char** cursor, jvalue* empty)
             if(trimmed == NULL) return JSON_FAILURE;
             empty->elements = trimmed; // again twostep so caller can handle deallocation on failure
             (*cursor)++; // continue to the next thing
-            return JSON_SUCCESS;
+            break;
 
         case '"': // parse a string
             (*cursor)++;
@@ -195,14 +197,14 @@ int json_parse_value(char** cursor, jvalue* empty)
             memcpy(empty->string, start, *cursor - start); // copy the string
             empty->type = JSON_STRING; // set object type
             (*cursor)++; // scoot the cursor past the end of the string (skip closing quotes)
-            return JSON_SUCCESS; // done!
+            break; // done!
 
         case 't': // parse a true literal
             if(json_is_literal(cursor, "true")) // takes care of cursor movement
             {
                 empty->type = JSON_BOOL;
                 empty->boolean = 1;
-                return JSON_SUCCESS;
+                break;
             }
             return JSON_FAILURE;
 
@@ -211,7 +213,7 @@ int json_parse_value(char** cursor, jvalue* empty)
             {
                 empty->type = JSON_BOOL;
                 empty->boolean = 0;
-                return JSON_SUCCESS;
+                break;
             }
             return JSON_FAILURE;
         
@@ -219,7 +221,7 @@ int json_parse_value(char** cursor, jvalue* empty)
             if(json_is_literal(cursor, "null")) // takes care of cursor movement
             {
                 empty->type = JSON_NULL;
-                return JSON_SUCCESS;
+                break;
             }
             return JSON_FAILURE;
 
@@ -227,9 +229,14 @@ int json_parse_value(char** cursor, jvalue* empty)
             empty->type = JSON_NUMBER; // set type of the member
             const char before = **cursor; // save value at cursor FIXME: funky pointers!
             empty->number = strtod(*cursor, cursor); // strtod moves the cursor one past the last character interpreted
-            return (empty->number == 0 && **cursor == before) ? JSON_FAILURE : JSON_SUCCESS; // TODO: make sure this check actually catches everything!
+            if (empty->number == 0 && **cursor == before) return JSON_FAILURE; // TODO: make sure this check actually catches everything!
             // strtod returns 0 on failure, but does it really not move the cursor?
+            break;
     }
+    // if we get to the end and there are still things to parse that aren't whitespace, the string must be malformed
+    skip_space(cursor);
+    if (**cursor != '\0') return JSON_FAILURE;
+    return JSON_SUCCESS;
 }
 
 jvalue* json_search_by_key(const char* key, const jvalue* obj)
@@ -297,7 +304,7 @@ int json_delete_all_members(const char* key, jvalue* obj)
 int json_add_member(const char* key, jvalue* element, jvalue* obj)
 {
     if(obj->type != JSON_OBJECT) return JSON_FAILURE;
-    jmember* new_member = malloc(sizeof(jmember));
+    jmember* new_member = calloc(1, sizeof(jmember));
     if(new_member == NULL) return JSON_FAILURE;
     new_member->string = calloc(strlen(key) + 1, 1);
     if(new_member->string == NULL)
@@ -342,7 +349,7 @@ static unsigned long jvallen(const jvalue* val)
             length = strlen(val->string) + 2;
             break;
         case JSON_NUMBER:
-            sprintf(buf, "%f", val->number);
+            sprintf(buf, "%g", val->number);
             length = strlen(buf);
             break;
         case JSON_BOOL:
@@ -360,7 +367,7 @@ static unsigned long jvallen(const jvalue* val)
 }
 
 // remember to free what this returns!
-char* jval_to_str(const jvalue* val)
+char* json_jval_to_str(const jvalue* val)
 {
     if(val == NULL) return NULL;
     char* out = calloc(jvallen(val) + 1, 1);
@@ -375,7 +382,7 @@ char* jval_to_str(const jvalue* val)
             jmember* now = val->members;
             while(now != NULL)
             {
-                char* inner = jval_to_str(now->element); // TODO: this is probably slow - going over a lot of strings a lot of times.
+                char* inner = json_jval_to_str(now->element); // TODO: this is probably slow - going over a lot of strings a lot of times. not to mention the memory issues from recursive parsing!
                 sprintf(pos, "\"%s\" : %s%s", now->string, inner, now->next != NULL ? ",\n" : "");
                 pos += strlen(now->string) + 5 + strlen(inner) + (now->next != NULL ? 2 : 0);
                 free(inner);
@@ -389,7 +396,7 @@ char* jval_to_str(const jvalue* val)
             pos += 2;
             for(int i = 0; val->elements[i] != NULL; i++)
             {
-                char* inner = jval_to_str(val->elements[i]);
+                char* inner = json_jval_to_str(val->elements[i]);
                 sprintf(pos, "%s%s", inner, val->elements[i + 1] != NULL ? ",\n" : "");
                 pos += strlen(inner) + (val->elements[i + 1] != NULL ? 2 : 0);
                 free(inner);
@@ -401,7 +408,7 @@ char* jval_to_str(const jvalue* val)
             sprintf(out, "\"%s\"", val->string);
             break;
         case JSON_NUMBER:
-            sprintf(out, "%f", val->number);
+            sprintf(out, "%g", val->number);
             break;
         case JSON_BOOL:
             strcpy(out, val->boolean ? "true" : "false");

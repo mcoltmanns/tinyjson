@@ -1,8 +1,8 @@
 #ifndef TINYJSON_HEADER
 #define TINYJSON_HEADER
 
-#define JSON_SUCCESS 1
-#define JSON_FAILURE 0
+#define JSON_SUCCESS 0
+#define JSON_FAILURE 1
 
 enum JSON_TYPES {
     JSON_OBJECT,
@@ -23,7 +23,7 @@ struct jvalue {
         jvalue** elements; // arrays are arrays of pointers to jvalues (terminate with null ptr)
         char* string;
         double number;
-        int boolean;
+        int boolean; // true is 1, false is 0
     };
 };
 
@@ -34,7 +34,7 @@ struct jmember {
 };
 
 // print a json value to stdout (uses printf)
-void json_print_value(jvalue* v);
+void json_print_value(const jvalue* v);
 
 // free the memory associated with a jvalue
 // also frees all members/elements of the value if it's an array or object
@@ -42,9 +42,9 @@ void json_free_value(jvalue* v);
 
 // parse a json value from a string, and leave the cursor on the first character after that value
 // cursor should be the address of the beginning of a string (eg char** cursor = &str)
-// empty should be a previously malloc'd jvalue (will be filled)
+// empty MUST be a previously malloc'd jvalue (will be filled)
 // returns JSON_FAILURE on fail (due to syntax or memory errors)
-// regardless of success or failure, the caller is expected to allocate and free empty (using json_free_value)
+// regardless of success or failure, the caller is expected to allocate (using malloc(sizeof(jvalue))) and free empty (using json_free_value)
 int json_parse_value(char** cursor, jvalue* empty);
 
 // search for a certain key in a json object (non-recursive)
@@ -65,6 +65,6 @@ int json_add_member(const char* key, jvalue* val, jvalue* obj);
 // allocate and return a pointer to a valid json string representing val
 // output will be valid json, but not necessarily pretty
 // returns NULL on failure
-char* jval_to_str(const jvalue* val);
+char* json_jval_to_str(const jvalue* val);
 
 #endif

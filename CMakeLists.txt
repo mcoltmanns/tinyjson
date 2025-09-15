@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 4.0)
 
 project(tinyjson VERSION 0.0 DESCRIPTION "Small JSON library written in/for C.")
 
+# LIBRARY BUILD/INSTALL
 add_library(tinyjson SHARED
-    tinyjson.c
+        src/tinyjson.c
 )
 
 set_target_properties(tinyjson PROPERTIES VERSION ${PROJECT_VERSION})
