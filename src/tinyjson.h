@@ -15,6 +15,7 @@ enum JSON_TYPES {
 
 typedef struct jvalue jvalue;
 typedef struct jmember jmember;
+typedef struct jnumber jnumber;
 
 struct jvalue {
     int type;
@@ -31,6 +32,11 @@ struct jmember {
     char* string; // members contain a string and a pointer to an element, and a pointer to the next member in the object
     jvalue* element;
     jmember* next;
+};
+
+struct jnumber {
+    char* string; // string representation of this number
+    double value; // actual value of the number
 };
 
 // print a json value to stdout (uses printf)

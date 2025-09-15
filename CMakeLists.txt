@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 4.0)
 
 project(tinyjson VERSION 0.0 DESCRIPTION "Small JSON library written in/for C.")
+add_subdirectory(test)
 
 # LIBRARY BUILD/INSTALL
 add_library(tinyjson SHARED
@@ -9,7 +10,7 @@ add_library(tinyjson SHARED
 
 set_target_properties(tinyjson PROPERTIES VERSION ${PROJECT_VERSION})
 
-set_target_properties(tinyjson PROPERTIES PUBLIC_HEADER tinyjson.h)
+set_target_properties(tinyjson PROPERTIES PUBLIC_HEADER src/tinyjson.h)
 
 include(GNUInstallDirs)
 
